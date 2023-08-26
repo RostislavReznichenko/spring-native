@@ -1,0 +1,132 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - '5432:5432'
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  prometheus:
+    image: prom/prometheus:v2.38.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - --enable-feature=exemplar-storage
+      - --web.enable-remote-write-receiver
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - "9090:9090"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  grafana:
+    image: grafana/grafana-oss:9.1.4
+    user: "$UID:$GID"
+    container_name: grafana-container
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_DOMAIN=localhost
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "4318:4318"
+      - "6831:6831"
+      - "9411:9411"
+      - "16686:16686"
+    environment:
+      #      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  broker:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: broker
+    ports:
+      # To learn about configuring Kafka for access across networks see
+      # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  service-native:
+    image: boot3-native
+    ports:
+      - "8081:8081"
+    depends_on:
+      - broker
+    environment:
+      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+      ZIPKIN_HOST: jaeger
+      DB_HOST: db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  service-java:
+    image: boot3-java
+    ports:
+      - "8082:8081"
+    depends_on:
+      - broker
+    environment:
+      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+      ZIPKIN_HOST: jaeger
+      DB_HOST: db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
