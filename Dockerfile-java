@@ -20,5 +20,4 @@ RUN addgroup -S ${USER} && adduser -S ${USER} -G ${USER}\
 
 WORKDIR /home/$USER
 USER ${USER}
-EXPOSE 8081
 ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]

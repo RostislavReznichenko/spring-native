@@ -4,8 +4,11 @@ server:
     whitelabel:
       enabled: false
 spring:
+  threads:
+    virtual:
+      enabled: true
   application:
-    name: test1
+    name: spring-mvc
   security:
     user:
       password: user
@@ -17,7 +20,7 @@ spring:
     password: postgres
   kafka:
     bootstrap-servers: localhost:9092
-    client-id: test1
+    client-id: spring-mvc
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -28,6 +31,12 @@ spring:
       ddl-auto: update
 
 management:
+#  observations:
+#    key-values:
+#      cluster: dev
+#    enable:
+#      spring:
+#        security: false
   metrics:
     distribution:
       percentiles-histogram:
@@ -44,13 +53,12 @@ management:
   endpoint:
     health:
       show-details: always
-  otlp:
-    metrics:
-      export:
-        url: http://localhost:4318/v1/metrics
   zipkin:
     tracing:
       endpoint: http://${ZIPKIN_HOST}:9411/api/v2/spans
+  server:
+    port: 8090
 logging:
   pattern:
-    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{X-CORRELATION-ID:-}]"
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  include-application-name: false

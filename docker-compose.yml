@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   db:
-    image: postgres:14.1-alpine
+    image: postgres:15.4-alpine
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -16,7 +16,7 @@ services:
           memory: 512M
 
   prometheus:
-    image: prom/prometheus:v2.38.0
+    image: prom/prometheus:v2.46.0
     container_name: prometheus
     volumes:
       - ./prometheus/:/etc/prometheus/
@@ -41,7 +41,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 128M
     ports:
       - "3000:3000"
     volumes:
@@ -102,8 +102,10 @@ services:
     image: boot3-native
     ports:
       - "8081:8081"
+      - "7081:8090"
     depends_on:
       - broker
+      - db
     environment:
       SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
       ZIPKIN_HOST: jaeger
@@ -111,22 +113,71 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 256M
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 512M
 
   service-java:
     image: boot3-java
     ports:
       - "8082:8081"
+      - "7082:8090"
     depends_on:
       - broker
+      - db
     environment:
       SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
       ZIPKIN_HOST: jaeger
       DB_HOST: db
+      JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 256M
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 512M
 
+  service-native-reactive:
+    image: boot3-native-reactive
+    ports:
+      - "8083:8083"
+      - "7083:8090"
+    depends_on:
+      - broker
+      - db
+    environment:
+      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+      ZIPKIN_HOST: jaeger
+      DB_HOST: db
+      SERVER_PORT: 8083
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 512M
+
+  service-java-reactive:
+    image: boot3-java-reactive
+    ports:
+      - "8084:8084"
+      - "7084:8090"
+    depends_on:
+      - broker
+      - db
+    environment:
+      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+      ZIPKIN_HOST: jaeger
+      DB_HOST: db
+      SERVER_PORT: 8084
+      JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 512M
