@@ -107,16 +107,21 @@ services:
       - broker
       - db
     environment:
-      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+#      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
       ZIPKIN_HOST: jaeger
       DB_HOST: db
+      SPRING_CONFIG_LOCATION: classpath:/,file:/service/vault/
+#      SPRING_CONFIG_IMPORT: optional:/service/vault/application-secret.yml
+#      SPRING_CONFIG_LOCATION: "/service/"
+    volumes:
+      - ./profiles/application-secret.yml:/service/vault/application-secret.yaml
     deploy:
       resources:
         limits:
           cpus: "1"
-          memory: 512M
+          memory: 128M
         reservations:
-          memory: 512M
+          memory: 128M
 
   service-java:
     image: boot3-java

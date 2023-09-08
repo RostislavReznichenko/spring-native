@@ -29,6 +29,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  config:
+    import: optional:vault/application-secret.yml
 
 management:
 #  observations:

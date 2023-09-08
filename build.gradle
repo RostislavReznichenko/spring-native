@@ -50,6 +50,10 @@ bootJar {
 	}
 }
 
+tasks.withType(org.springframework.boot.gradle.tasks.aot.ProcessAot).configureEach {
+	args('--spring.profiles.active=secret')
+}
+
 dependencies {
 //	implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.0.2'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
