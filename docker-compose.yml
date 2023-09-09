@@ -15,55 +15,55 @@ services:
           cpus: "1"
           memory: 512M
 
-  prometheus:
-    image: prom/prometheus:v2.46.0
-    container_name: prometheus
-    volumes:
-      - ./prometheus/:/etc/prometheus/
-    command:
-      - --enable-feature=exemplar-storage
-      - --web.enable-remote-write-receiver
-      - '--config.file=/etc/prometheus/prometheus.yaml'
-    ports:
-      - "9090:9090"
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-
-  grafana:
-    image: grafana/grafana-oss:9.1.4
-    user: "$UID:$GID"
-    container_name: grafana-container
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana/:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SERVER_DOMAIN=localhost
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "4318:4318"
-      - "6831:6831"
-      - "9411:9411"
-      - "16686:16686"
-    environment:
-      #      - COLLECTOR_OTLP_ENABLED=true
-      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+#  prometheus:
+#    image: prom/prometheus:v2.46.0
+#    container_name: prometheus
+#    volumes:
+#      - ./prometheus/:/etc/prometheus/
+#    command:
+#      - --enable-feature=exemplar-storage
+#      - --web.enable-remote-write-receiver
+#      - '--config.file=/etc/prometheus/prometheus.yaml'
+#    ports:
+#      - "9090:9090"
+#    restart: always
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 64M
+#
+#  grafana:
+#    image: grafana/grafana-oss:9.1.4
+#    user: "$UID:$GID"
+#    container_name: grafana-container
+#    depends_on:
+#      - prometheus
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 128M
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - ./grafana/:/var/lib/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=admin
+#      - GF_SERVER_DOMAIN=localhost
+#
+#  jaeger:
+#    image: jaegertracing/all-in-one:latest
+#    ports:
+#      - "4318:4318"
+#      - "6831:6831"
+#      - "9411:9411"
+#      - "16686:16686"
+#    environment:
+#      #      - COLLECTOR_OTLP_ENABLED=true
+#      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -98,6 +98,14 @@ services:
         limits:
           memory: 512M
 
+  vault:
+    image: vault:1.13.3
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: 00000000-0000-0000-0000-000000000000
+      VAULT_ADDR: http://127.0.0.1:8200
+
   service-native:
     image: boot3-native
     ports:
@@ -107,14 +115,12 @@ services:
       - broker
       - db
     environment:
-#      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
       ZIPKIN_HOST: jaeger
       DB_HOST: db
-      SPRING_CONFIG_LOCATION: classpath:/,file:/service/vault/
-#      SPRING_CONFIG_IMPORT: optional:/service/vault/application-secret.yml
-#      SPRING_CONFIG_LOCATION: "/service/"
+      SPRING_PROFILES_ACTIVE: secret
+      SPRING_CONFIG_LOCATION: classpath:/,/service/vault/
     volumes:
-      - ./profiles/application-secret.yml:/service/vault/application-secret.yaml
+      - ./resources/:/service/vault/
     deploy:
       resources:
         limits:
@@ -131,10 +137,15 @@ services:
     depends_on:
       - broker
       - db
+      - vault
+    volumes:
+      - ./resources/:/service/vault/
     environment:
-      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
       ZIPKIN_HOST: jaeger
       DB_HOST: db
+      SPRING_PROFILES_ACTIVE: secret,vault
+      SPRING_CONFIG_LOCATION: classpath:/,file:/service/vault/
+      SPRING_CLOUD_VAULT_URI: http://vault:8200
       JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
     deploy:
       resources:
@@ -144,45 +155,45 @@ services:
         reservations:
           memory: 512M
 
-  service-native-reactive:
-    image: boot3-native-reactive
-    ports:
-      - "8083:8083"
-      - "7083:8090"
-    depends_on:
-      - broker
-      - db
-    environment:
-      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
-      ZIPKIN_HOST: jaeger
-      DB_HOST: db
-      SERVER_PORT: 8083
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
-        reservations:
-          memory: 512M
-
-  service-java-reactive:
-    image: boot3-java-reactive
-    ports:
-      - "8084:8084"
-      - "7084:8090"
-    depends_on:
-      - broker
-      - db
-    environment:
-      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
-      ZIPKIN_HOST: jaeger
-      DB_HOST: db
-      SERVER_PORT: 8084
-      JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
-        reservations:
-          memory: 512M
+#  service-native-reactive:
+#    image: boot3-native-reactive
+#    ports:
+#      - "8083:8083"
+#      - "7083:8090"
+#    depends_on:
+#      - broker
+#      - db
+#    environment:
+#      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+#      ZIPKIN_HOST: jaeger
+#      DB_HOST: db
+#      SERVER_PORT: 8083
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: "1"
+#          memory: 512M
+#        reservations:
+#          memory: 512M
+#
+#  service-java-reactive:
+#    image: boot3-java-reactive
+#    ports:
+#      - "8084:8084"
+#      - "7084:8090"
+#    depends_on:
+#      - broker
+#      - db
+#    environment:
+#      SPRING_KAFKA_BOOTSTRAPSERVERS: broker:29092
+#      ZIPKIN_HOST: jaeger
+#      DB_HOST: db
+#      SERVER_PORT: 8084
+#      JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: "1"
+#          memory: 512M
+#        reservations:
+#          memory: 512M
