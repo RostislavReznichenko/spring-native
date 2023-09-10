@@ -15,41 +15,41 @@ services:
           cpus: "1"
           memory: 512M
 
-#  prometheus:
-#    image: prom/prometheus:v2.46.0
-#    container_name: prometheus
-#    volumes:
-#      - ./prometheus/:/etc/prometheus/
-#    command:
-#      - --enable-feature=exemplar-storage
-#      - --web.enable-remote-write-receiver
-#      - '--config.file=/etc/prometheus/prometheus.yaml'
-#    ports:
-#      - "9090:9090"
-#    restart: always
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 64M
-#
-#  grafana:
-#    image: grafana/grafana-oss:9.1.4
-#    user: "$UID:$GID"
-#    container_name: grafana-container
-#    depends_on:
-#      - prometheus
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 128M
-#    ports:
-#      - "3000:3000"
-#    volumes:
-#      - ./grafana/:/var/lib/grafana
-#    environment:
-#      - GF_SECURITY_ADMIN_PASSWORD=admin
-#      - GF_SERVER_DOMAIN=localhost
-#
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - --enable-feature=exemplar-storage
+      - --web.enable-remote-write-receiver
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - "9090:9090"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  grafana:
+    image: grafana/grafana-oss:9.1.4
+    user: "$UID:$GID"
+    container_name: grafana-container
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_DOMAIN=localhost
+
 #  jaeger:
 #    image: jaegertracing/all-in-one:latest
 #    ports:
@@ -144,7 +144,7 @@ services:
       ZIPKIN_HOST: jaeger
       DB_HOST: db
       SPRING_PROFILES_ACTIVE: secret,vault
-      SPRING_CONFIG_LOCATION: classpath:/,file:/service/vault/
+      SPRING_CONFIG_LOCATION: classpath:/,/service/vault/
       SPRING_CLOUD_VAULT_URI: http://vault:8200
       JAVA_TOOL_OPTIONS: "-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 -XX:MetaspaceSize=96"
     deploy:
