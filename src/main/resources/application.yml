@@ -29,6 +29,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  cloud:
+    vault:
+      kv:
+        enabled: false
+        backend: secret/service-internal
+      enabled: false
+      application-name: ${spring.application.name}
 
 management:
 #  observations:
@@ -59,6 +66,6 @@ management:
   server:
     port: 8090
 logging:
-  pattern:
-    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-  include-application-name: false
+#  pattern:
+#    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  include-application-name: true

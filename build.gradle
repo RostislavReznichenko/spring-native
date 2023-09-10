@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.2.0-M2'
+	id 'org.springframework.boot' version '3.1.3'
 	id 'io.spring.dependency-management' version '1.1.3'
 	id 'org.hibernate.orm' version '6.1.7.Final'
 	id 'org.graalvm.buildtools.native' version '0.9.25'
@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-	set('springCloudVersion', "2023.0.0-M1")
+	set('springCloudVersion', "2022.0.4")
 }
 
 configurations {
@@ -50,8 +50,13 @@ bootJar {
 	}
 }
 
+//tasks.withType(org.springframework.boot.gradle.tasks.aot.ProcessAot).configureEach {
+//	args('--spring.profiles.active=secret')
+//}
+
 dependencies {
 //	implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.0.2'
+	implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
